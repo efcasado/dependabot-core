@@ -80,6 +80,11 @@
     "ecosystem": "maven"
   },
   {
+    "core": "mise",
+    "test": "mise",
+    "ecosystem": "mise"
+  },
+  {
     "core": "npm_and_yarn",
     "test": "npm",
     "ecosystem": "npm"

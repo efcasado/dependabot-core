@@ -1,0 +1,5 @@
+[tools]
+node = "20"           # fuzzy major only
+python = "latest"     # alias
+ruby = "lts"          # alias
+go = "prefix:1.20"    # scoped prefix
