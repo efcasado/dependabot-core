@@ -37,6 +37,48 @@ RSpec.describe Dependabot::Mise::FileParser do
     subject(:dependencies) { parser.parse }
 
     context "with simple exact versions" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/mise outdated/, hash_including(stderr_to_stdout: false))
+          .and_return(JSON.dump(
+                        {
+                          "erlang" => {
+                            "name" => "erlang",
+                            "requested" => "27.3.2",
+                            "current" => nil,
+                            "bump" => "28.4.1",
+                            "latest" => "28.4.1",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          },
+                          "elixir" => {
+                            "name" => "elixir",
+                            "requested" => "1.18.4-otp-27",
+                            "current" => nil,
+                            "bump" => "1.19.5-otp-28",
+                            "latest" => "1.19.5-otp-28",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          },
+                          "helm" => {
+                            "name" => "helm",
+                            "requested" => "3.17.3",
+                            "current" => nil,
+                            "bump" => "4.1.3",
+                            "latest" => "4.1.3",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          }
+                        }
+                      ))
+      end
+
       it "returns the correct number of dependencies" do
         expect(dependencies.length).to eq(3)
       end
@@ -73,6 +115,92 @@ RSpec.describe Dependabot::Mise::FileParser do
     end
 
     context "with mixed version formats" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/mise outdated/, hash_including(stderr_to_stdout: false))
+          .and_return(JSON.dump(
+                        {
+                          "node" => {
+                            "name" => "node",
+                            "requested" => "20",
+                            "current" => nil,
+                            "bump" => "25",
+                            "latest" => "25.8.1",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          },
+                          "erlang" => {
+                            "name" => "erlang",
+                            "requested" => "27.3.2",
+                            "current" => nil,
+                            "bump" => "28.4.1",
+                            "latest" => "28.4.1",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          },
+                          "npm:@redocly/cli" => {
+                            "name" => "npm:@redocly/cli",
+                            "requested" => "2.19.1",
+                            "current" => nil,
+                            "bump" => "2.24.1",
+                            "latest" => "2.24.1",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          },
+                          "python" => {
+                            "name" => "python",
+                            "requested" => "latest",
+                            "current" => nil,
+                            "bump" => nil,
+                            "latest" => "3.14.3",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          },
+                          "helm" => {
+                            "name" => "helm",
+                            "requested" => "3.17.3",
+                            "current" => nil,
+                            "bump" => "4.1.3",
+                            "latest" => "4.1.3",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          },
+                          "ruby" => {
+                            "name" => "ruby",
+                            "requested" => "3.3.0",
+                            "current" => nil,
+                            "bump" => "4.0.2",
+                            "latest" => "4.0.2",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          },
+                          "go" => {
+                            "name" => "go",
+                            "requested" => "1.18",
+                            "current" => nil,
+                            "bump" => "1.26",
+                            "latest" => "1.26.1",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          }
+                        }
+                      ))
+      end
+
       let(:mise_toml) do
         Dependabot::DependencyFile.new(
           name: "mise.toml",
@@ -84,8 +212,8 @@ RSpec.describe Dependabot::Mise::FileParser do
         expect(dependencies.map(&:name)).to contain_exactly(
           "erlang",
           "helm",
-          "node",
           "npm:@redocly/cli",
+          "node",
           "python",
           "ruby",
           "go"
@@ -109,6 +237,48 @@ RSpec.describe Dependabot::Mise::FileParser do
     end
 
     context "with fuzzy version formats" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/mise outdated/, hash_including(stderr_to_stdout: false))
+          .and_return(JSON.dump(
+                        {
+                          "node" => {
+                            "name" => "node",
+                            "requested" => "20",
+                            "current" => nil,
+                            "bump" => "25",
+                            "latest" => "25.8.1",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          },
+                          "python" => {
+                            "name" => "python",
+                            "requested" => "latest",
+                            "current" => nil,
+                            "bump" => nil,
+                            "latest" => "3.14.3",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          },
+                          "ruby" => {
+                            "name" => "ruby",
+                            "requested" => "lts",
+                            "current" => nil,
+                            "bump" => nil,
+                            "latest" => "4.0.2",
+                            "source" => {
+                              "type" => "mise.toml",
+                              "path" => "mise.toml"
+                            }
+                          }
+                        }
+                      ))
+      end
+
       let(:mise_toml) do
         Dependabot::DependencyFile.new(
           name: "mise.toml",

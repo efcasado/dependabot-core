@@ -20,14 +20,13 @@ module Dependabot
           write_manifest_files(dependency_files)
 
           raw = Dependabot::SharedHelpers.run_shell_command(
-            "mise outdated --bump --json",
+            "mise outdated --bump --local --json",
             stderr_to_stdout: false,
             env: { "MISE_YES" => "1" }
           )
 
           JSON.parse(raw).filter_map do |tool_name, entry|
             next unless entry
-            next unless entry.dig("source", "path") == File.join(Dir.pwd, "mise.toml")
 
             requested = entry["requested"]
             bump = entry["bump"]

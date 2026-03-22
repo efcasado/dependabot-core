@@ -1,7 +1,7 @@
 [tools]
 erlang = "27.3.2"
-node = "20"
 "npm:@redocly/cli" = "2.19.1"
+node = "20"
 python = "latest"
 helm = "3.17.3"
 ruby = { version = "3.3.0", virtualenv = ".venv" }
