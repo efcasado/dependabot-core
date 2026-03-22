@@ -26,7 +26,10 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
         file: "mise.toml",
         groups: [],
         source: nil
-      }]
+      }],
+      metadata: {
+        bump_version: "0.0.0"
+      }
     )
   end
 
@@ -42,29 +45,20 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
   before do
     allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-      .with(/mise outdated/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
+      .with(/mise ls-remote/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
       .and_return(JSON.dump(
-                    {
-                      "erlang" => {
-                        "name" => "erlang",
-                        "requested" => "27.3.2",
-                        "current" => "27.3.2",
-                        "bump" => "28.0.0",
-                        "latest" => "28.0.0",
-                        "source" => {
-                          "type" => "mise.toml",
-                          "path" => File.join(Dir.pwd, "mise.toml")
-                        }
-                      }
-                    }
+                    [
+                      { "version" => "27.3.2", "created_at" => "2026-01-13T20:06:42.23Z", "rolling" => false },
+                      { "version" => "28.4.1", "created_at" => "2026-03-12T19:32:23.78Z", "rolling" => false }
+                    ]
                   ))
   end
 
   it_behaves_like "an update checker"
 
   describe "#latest_version" do
-    it "returns the latest version from mise outdated" do
-      expect(checker.latest_version).to eq("28.0.0")
+    it "returns the latest version from mise ls-remote" do
+      expect(checker.latest_version).to eq("28.4.1")
     end
   end
 
@@ -76,14 +70,14 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
 
   describe "#updated_requirements" do
     it "updates the requirement to the latest version" do
-      expect(checker.updated_requirements.first[:requirement]).to eq("28.0.0")
+      expect(checker.updated_requirements.first[:requirement]).to eq("28.4.1")
     end
   end
 
-  context "when mise outdated returns empty" do
+  context "when mise ls-remote returns empty" do
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with(/mise outdated/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
+        .with(/mise ls-remote/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
         .and_return("{}")
     end
 
@@ -100,10 +94,10 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
     end
   end
 
-  context "when mise outdated fails" do
+  context "when mise ls-remote fails" do
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-        .with(/mise outdated/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
+        .with(/mise ls-remote/, stderr_to_stdout: false, env: { "MISE_YES" => "1" })
         .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                      message: "mise not found",
                      error_context: {}
@@ -128,7 +122,10 @@ RSpec.describe Dependabot::Mise::UpdateChecker do
           file: "mise.toml",
           groups: [],
           source: nil
-        }]
+        }],
+        metadata: {
+          bump_version: nil
+        }
       )
     end
 

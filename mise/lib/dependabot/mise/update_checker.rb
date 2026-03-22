@@ -11,11 +11,23 @@ module Dependabot
   module Mise
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
-      include Dependabot::Mise::Helpers
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
-        @latest_version ||= T.let(fetch_latest_version, T.nilable(T.any(String, Gem::Version)))
+        return nil unless updatable?
+
+        @latest_version ||= T.let(
+          LatestVersionFinder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            security_advisories: security_advisories,
+            cooldown_options: update_cooldown
+          ).latest_version,
+          T.nilable(T.any(String, Gem::Version))
+        )
       end
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
@@ -39,44 +51,6 @@ module Dependabot
 
       private
 
-      sig { returns(T.nilable(String)) }
-      def fetch_latest_version
-        entry = run_mise_outdated[dependency.name]
-        return nil if entry.nil?
-        return nil unless entry.dig("source", "path") == File.join(Dir.pwd, "mise.toml")
-
-        version = entry["bump"]
-        return nil if version.nil? || version == "[NONE]"
-
-        version
-      end
-
-      sig { returns(T::Hash[String, T.untyped]) }
-      def run_mise_outdated
-        @run_mise_outdated ||= T.let(
-          begin
-            Dependabot::SharedHelpers.in_a_temporary_directory do
-              write_manifest_files(dependency_files)
-
-              raw = Dependabot::SharedHelpers.run_shell_command(
-                "mise outdated --bump --json #{dependency.name}",
-                stderr_to_stdout: false,
-                env: { "MISE_YES" => "1" }
-              )
-
-              JSON.parse(raw)
-            end
-          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-            Dependabot.logger.warn("mise outdated failed for #{dependency.name}: #{e.message}")
-            {}
-          rescue JSON::ParserError => e
-            Dependabot.logger.warn("mise outdated returned invalid JSON for #{dependency.name}: #{e.message}")
-            {}
-          end,
-          T.nilable(T::Hash[String, T.untyped])
-        )
-      end
-
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
         false
@@ -86,8 +60,15 @@ module Dependabot
       def updated_dependencies_after_full_unlock
         []
       end
+
+      sig { returns(T::Boolean) }
+      def updatable?
+        !dependency.metadata[:bump_version].nil? && !dependency.metadata[:bump_version].empty?
+      end
     end
   end
 end
 
 Dependabot::UpdateCheckers.register("mise", Dependabot::Mise::UpdateChecker)
+
+require_relative "update_checker/latest_version_finder"

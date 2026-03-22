@@ -20,36 +20,36 @@ module Dependabot
           write_manifest_files(dependency_files)
 
           raw = Dependabot::SharedHelpers.run_shell_command(
-            "mise ls --current --json",
+            "mise outdated --bump --json",
             stderr_to_stdout: false,
             env: { "MISE_YES" => "1" }
           )
 
-          JSON.parse(raw).filter_map do |tool_name, versions|
-            entry = versions.first
+          JSON.parse(raw).filter_map do |tool_name, entry|
             next unless entry
             next unless entry.dig("source", "path") == File.join(Dir.pwd, "mise.toml")
 
-            requested = entry["requested_version"] || entry["version"]
+            requested = entry["requested"]
+            bump = entry["bump"]
 
-            build_dependency(tool_name, requested)
+            build_dependency(tool_name, requested, bump)
           end
         end
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-        Dependabot.logger.warn("mise ls failed: #{e.message}")
+        Dependabot.logger.warn("mise outdated failed: #{e.message}")
         []
       rescue JSON::ParserError => e
-        Dependabot.logger.warn("mise ls returned invalid JSON: #{e.message}")
+        Dependabot.logger.warn("mise outdated returned invalid JSON: #{e.message}")
         []
       end
 
       private
 
       sig do
-        params(name: String, version: String)
+        params(name: String, version: String, bump_version: T.nilable(String))
           .returns(Dependabot::Dependency)
       end
-      def build_dependency(name, version)
+      def build_dependency(name, version, bump_version)
         Dependabot::Dependency.new(
           name: name,
           version: version,
@@ -59,7 +59,10 @@ module Dependabot
             file: "mise.toml",
             groups: [],
             source: nil
-          }]
+          }],
+          metadata: {
+            bump_version: bump_version
+          }
         )
       end
 

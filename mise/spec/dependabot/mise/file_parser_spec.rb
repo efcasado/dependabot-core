@@ -85,8 +85,8 @@ RSpec.describe Dependabot::Mise::FileParser do
           "erlang",
           "helm",
           "node",
-          "python",
           "npm:@redocly/cli",
+          "python",
           "ruby",
           "go"
         )
@@ -108,17 +108,19 @@ RSpec.describe Dependabot::Mise::FileParser do
       end
     end
 
-    context "with unsupported version formats" do
+    context "with fuzzy version formats" do
       let(:mise_toml) do
         Dependabot::DependencyFile.new(
           name: "mise.toml",
-          content: fixture("mise_toml/unsupported.toml")
+          content: fixture("mise_toml/fuzzy.toml")
         )
       end
 
       it "returns all tools regardless of version format" do
         expect(dependencies.map(&:name)).to contain_exactly(
-          "node", "python", "ruby", "go"
+          "node",
+          "python",
+          "ruby"
         )
       end
 
